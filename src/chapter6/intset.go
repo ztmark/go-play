@@ -5,17 +5,19 @@ import (
     "fmt"
 )
 
+const shiftBits = 32 << uint(^(uint(0)) >> 63)
+
 type IntSet struct {
-    words []uint64 // todo change to int,  32 << (^uint(0) >> 63
+    words []int
 }
 
 func (s *IntSet) Has(x int) bool {
-    word, bit := x / 64, uint(x % 64)
+    word, bit := x / shiftBits, uint(x % shiftBits)
     return word < len(s.words) && s.words[word] & (1 << bit) != 0
 }
 
 func (s *IntSet) Add(x int) {
-    word, bit := x / 64, uint(x % 64)
+    word, bit := x / shiftBits, uint(x % shiftBits)
     for word >= len(s.words) {
         s.words = append(s.words, 0)
     }
@@ -39,12 +41,12 @@ func (s *IntSet) String() string {
         if word == 0 {
             continue
         }
-        for j := 0; j < 64; j++ {
+        for j := 0; j < shiftBits; j++ {
             if word & (1 << uint(j)) != 0 {
                 if buf.Len() > len("{") {
                     buf.WriteByte(' ')
                 }
-                fmt.Fprintf(&buf, "%d", 64 * i + j)
+                fmt.Fprintf(&buf, "%d", shiftBits * i + j)
             }
         }
     }
@@ -52,41 +54,72 @@ func (s *IntSet) String() string {
     return buf.String()
 }
 
-// TODO
+func (s *IntSet) AddAll(ints ...int) {
+    for _, n := range ints {
+        s.Add(n)
+    }
+}
 
-func (*IntSet) AddAll(ints ...int) {
+func (s *IntSet) IntersectWith(set *IntSet) {
+    for i, _ := range s.words {
+        if i < len(set.words) {
+            s.words[i] &= set.words[i]
+        } else {
+            s.words[i] &= 0
+        }
+    }
 
 }
 
-func (*IntSet) IntersectWith(set *IntSet) {
-
+func (s *IntSet) DifferenceWith(set *IntSet) {
+    for i, w := range set.words {
+        if i < len(s.words) {
+            s.words[i] &= ^w
+        }
+    }
 }
 
-func (*IntSet) DifferenceWith(set *IntSet) {
-
+func (s *IntSet) SymmetricDifference(set *IntSet) {
+    for i, w := range set.words {
+        if i < len(s.words) {
+            s.words[i] = (s.words[i] | w) &^ (s.words[i] & w)
+        }
+    }
 }
 
-func (*IntSet) SymmetricDifference(set *IntSet) {
-
-}
-func (*IntSet) Len() int {
-    return 0
-}
-
-func (*IntSet) Remove(x int) {
-
-}
-
-func (*IntSet) Clear() {
-
+func (s *IntSet) Len() int {
+    l := 0
+    for _, w := range s.words {
+        for i := 1; w > 0; w >>= 1 {
+            if w & i == 1 {
+                l++
+            }
+        }
+    }
+    return l
 }
 
-func (*IntSet) Copy() *IntSet {
+func (s *IntSet) Remove(x int) {
+    w, b := x / shiftBits, x % shiftBits
+    s.words[w] &^= 1 << uint(b)
+}
+
+func (s *IntSet) Clear() {
+    for i, _ := range s.words {
+        s.words[i] &= 0
+    }
+}
+
+func (s *IntSet) Copy() *IntSet {
+    r := IntSet{}
+    for _, w := range s.words {
+        r.words = append(r.words, w)
+    }
+    return &r
+}
+
+func (s *IntSet) Elems() []int {
     return nil
-}
-
-func (*IntSet) Elems() []int {
-
 }
 
 func main() {
@@ -99,4 +132,22 @@ func main() {
     y.Add(9)
     y.Add(43)
     fmt.Println(y.String())
+
+    x1 := x.Copy()
+    x1.IntersectWith(&y)
+    fmt.Println(x1)
+    x1 = x.Copy()
+    x1.DifferenceWith(&y)
+    fmt.Println(x1)
+    x.SymmetricDifference(&y)
+    fmt.Println(x.String())
+    fmt.Println(x.Len())
+    x.Remove(43)
+    fmt.Println(x.String())
+    x.Clear()
+    fmt.Println(x.String())
+
+    fmt.Println("====")
+    fmt.Println(shiftBits)
+    fmt.Println(32 << (uint(^(uint(0)) >> 63)))
 }
