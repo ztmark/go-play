@@ -1,11 +1,14 @@
 package memo
 
+import "sync"
+
 // package memo provides a concurrency unsafe memoization of a function of type Func.
 
 
 // A memo caches the result of calling a Func
 type Memo struct {
     f Func
+    mu sync.Mutex
     cache map[string]result
 }
 
@@ -23,6 +26,8 @@ func New(f Func) *Memo {
 
 // NOTE: not concurrency-safe!
 func (memo *Memo) Get(key string) (interface{}, error) {
+    memo.mu.Lock()
+    defer memo.mu.Unlock()
     res, ok := memo.cache[key]
     if !ok {
         res.value, res.err = memo.f(key)
