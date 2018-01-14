@@ -1,22 +1,19 @@
-package memo_test
+package memo
 
 import (
     "chapter9/memotest"
     "testing"
-    "chapter9/memo2"
+    "chapter9/memo1"
 )
 
 var httpGetBody = memotest.HTTPGetBody
 
-func Test(t *testing.T) {
+func TestMemoSequential(t *testing.T) {
     m := memo.New(httpGetBody)
-    defer m.Close()
     memotest.Sequential(t, m)
 }
 
-func TestConcurrent(t *testing.T) {
+func TestMemoConcurrent(t *testing.T) {
     m := memo.New(httpGetBody)
-    defer m.Close()
     memotest.Concurrent(t, m)
 }
-

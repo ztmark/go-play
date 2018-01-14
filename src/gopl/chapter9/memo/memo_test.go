@@ -1,9 +1,9 @@
-package memo_test
+package memo
 
 import (
     "chapter9/memotest"
     "testing"
-    "chapter9/memo1"
+    "chapter9/memo"
 )
 
 var httpGetBody = memotest.HTTPGetBody
